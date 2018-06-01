@@ -1,0 +1,5 @@
+dns.env
+.terraform
+terraform.tfstate*
+terraform.tfvars
+
