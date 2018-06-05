@@ -5,6 +5,8 @@ sudo yum update -y
 sudo yum clean all
 sudo sudo yum install -y bind bindutils
 
+sudo systemctl disable firewalld
+
 # reset any existing iptables rules
 sudo iptables -P INPUT ACCEPT
 sudo iptables -P FORWARD ACCEPT
