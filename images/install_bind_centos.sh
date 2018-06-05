@@ -3,7 +3,7 @@
 sudo yum clean all
 sudo yum update -y
 sudo yum clean all
-sudo sudo yum install -y bind bindutils
+sudo sudo yum install -y bind bind-utils
 
 sudo systemctl disable firewalld
 
