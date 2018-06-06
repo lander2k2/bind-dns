@@ -2,18 +2,19 @@
 
 set -e
 
-: "${DOMAIN_NAME:?Env variable DOMAIN_NAME must be set and not empty}"
 : "${SLAVE_IP:?Env variable SLAVE_IP must be set and not empty}"
-: "${SUBDOMAIN:?Env variable SUBDOMAIN must be set and not empty}"
+: "${BASE_DOMAIN:?Env variable BASE_DOMAIN must be set and not empty}"
+: "${ZONE_SUBDOMAIN:?Env variable ZONE_SUBDOMAIN must be set and not empty}"
+: "${API_SUBDOMAIN:?Env variable API_SUBDOMAIN must be set and not empty}"
 : "${API_ELB:?Env variable API_ELB must be set and not empty}"
-: "${JUMP_IP:?Env variable JUMP_IP must be set and not empty}"
+: "${UPSTREAM_DNS:?Env variable UPSTREAM_DNS must be set and not empty}"
 : "${FORWARDER:?Env variable FORWARDER must be set and not empty}"
 
 PRIVATE_IP=$(ip addr show eth0 | grep -Po 'inet \K[\d.]+')
 
-grep -qF "${PRIVATE_IP} ns1.${DOMAIN_NAME} ns1" /etc/hosts || echo "${PRIVATE_IP} ns1.${DOMAIN_NAME} ns1" >> /etc/hosts
+grep -qF "${PRIVATE_IP} kns1.${BASE_DOMAIN} kns1" /etc/hosts || echo "${PRIVATE_IP} kns1.${BASE_DOMAIN} kns1" >> /etc/hosts
 
-echo "ns1" > /etc/hostname
+echo "kns1" > /etc/hostname
 hostname -F /etc/hostname
 
 cat > /etc/named.conf <<EOF
@@ -31,7 +32,7 @@ cat > /etc/named.conf <<EOF
 acl "trusted" {
 	${PRIVATE_IP};
 	${SLAVE_IP};
-	${JUMP_IP};
+	${UPSTREAM_DNS}
 };
 
 options {
@@ -86,9 +87,9 @@ include "/etc/named/named.conf.local";
 EOF
 
 cat > /etc/named/named.conf.local <<EOF
-zone "${DOMAIN_NAME}" {
+zone "${ZONE_SUBDOMAIN}.${BASE_DOMAIN}" {
 	type master;
-	file "/etc/named/zones/db.${DOMAIN_NAME}";
+	file "/etc/named/zones/db.${ZONE_SUBDOMAIN}.${BASE_DOMAIN}";
 	allow-transfer { ${SLAVE_IP}; };
 };
 EOF
@@ -96,12 +97,13 @@ EOF
 if [ ! -d /etc/named/zones ]; then
 	mkdir /etc/named/zones
 fi
-cat > /etc/named/zones/db.${DOMAIN_NAME} <<EOF
+cat > /etc/named/zones/db.${ZONE_SUBDOMAIN}.${BASE_DOMAIN} <<EOF
 ;
 ; BIND data file for local loopback interface
 ;
+\$ORIGIN ${ZONE_SUBDOMAIN}.${BASE_DOMAIN}.
 \$TTL	604800
-@	IN	SOA	ns1.${DOMAIN_NAME}. admin.${DOMAIN_NAME}. (
+@	IN	SOA	kns1.${BASE_DOMAIN}. kadmin.${BASE_DOMAIN}. (
 			      5		; Serial
 			 604800		; Refresh
 			  86400		; Retry
@@ -109,18 +111,18 @@ cat > /etc/named/zones/db.${DOMAIN_NAME} <<EOF
 			 604800 )	; Negative Cache TTL
 ;
 ; Name servers
-${DOMAIN_NAME}.	IN	NS	ns1.${DOMAIN_NAME}.
-${DOMAIN_NAME}.	IN	NS	ns2.${DOMAIN_NAME}.
+	IN	NS	kns1.${BASE_DOMAIN}.
+	IN	NS	kns2.${BASE_DOMAIN}.
 ; A records for name servers
-ns1	IN	A	${PRIVATE_IP}
-ns2	IN	A	${SLAVE_IP}
+kns1	IN	A	${PRIVATE_IP}
+kns2	IN	A	${SLAVE_IP}
 ;
-${SUBDOMAIN}	IN	CNAME	${API_ELB}.
+${API_SUBDOMAIN}	IN	CNAME	${API_ELB}.
 EOF
 
 named-checkconf
 
-named-checkzone ${DOMAIN_NAME} /etc/named/zones/db.${DOMAIN_NAME}
+named-checkzone ${ZONE_SUBDOMAIN}.${BASE_DOMAIN} /etc/named/zones/db.${ZONE_SUBDOMAIN}.${BASE_DOMAIN}
 
 systemctl restart named
 systemctl enable named

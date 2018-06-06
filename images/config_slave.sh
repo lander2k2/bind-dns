@@ -2,18 +2,19 @@
 
 set -e
 
-: "${DOMAIN_NAME:?Env variable DOMAIN_NAME must be set and not empty}"
 : "${MASTER_IP:?Env variable MASTER_IP must be set and not empty}"
-: "${SUBDOMAIN:?Env variable SUBDOMAIN must be set and not empty}"
+: "${BASE_DOMAIN:?Env variable BASE_DOMAIN must be set and not empty}"
+: "${ZONE_SUBDOMAIN:?Env variable ZONE_SUBDOMAIN must be set and not empty}"
+: "${API_SUBDOMAIN:?Env variable API_SUBDOMAIN must be set and not empty}"
 : "${API_ELB:?Env variable API_ELB must be set and not empty}"
-: "${JUMP_IP:?Env variable JUMP_IP must be set and not empty}"
+: "${UPSTREAM_DNS:?Env variable UPSTREAM_DNS must be set and not empty}"
 : "${FORWARDER:?Env variable FORWARDER must be set and not empty}"
 
 PRIVATE_IP=$(ip addr show eth0 | grep -Po 'inet \K[\d.]+')
 
-grep -qF "${PRIVATE_IP} ns2.${DOMAIN_NAME} ns2" /etc/hosts || echo "${PRIVATE_IP} ns2.${DOMAIN_NAME} ns2" >> /etc/hosts
+grep -qF "${PRIVATE_IP} kns2.${BASE_DOMAIN} kns2" /etc/hosts || echo "${PRIVATE_IP} kns2.${BASE_DOMAIN} kns2" >> /etc/hosts
 
-echo "ns2" > /etc/hostname
+echo "kns2" > /etc/hostname
 hostname -F /etc/hostname
 
 cat > /etc/named.conf <<EOF
@@ -31,7 +32,7 @@ cat > /etc/named.conf <<EOF
 acl "trusted" {
 	${PRIVATE_IP};
 	${MASTER_IP};
-	${JUMP_IP};
+	${UPSTREAM_DNS}
 };
 
 options {
@@ -88,9 +89,9 @@ include "/etc/named/named.conf.local";
 EOF
 
 cat > /etc/named/named.conf.local <<EOF
-zone "${DOMAIN_NAME}" {
+zone "${ZONE_SUBDOMAIN}.${BASE_DOMAIN}" {
 	type slave;
-	file "/etc/named/zones/db.${DOMAIN_NAME}";
+	file "/etc/named/zones/db.${ZONE_SUBDOMAIN}.${BASE_DOMAIN}";
 	masters { ${MASTER_IP}; };
 };
 EOF
