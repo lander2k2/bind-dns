@@ -120,6 +120,9 @@ kns2	IN	A	${SLAVE_IP}
 ${API_SUBDOMAIN}	IN	CNAME	${API_ELB}.
 EOF
 
+chown root:named /etc/named.conf
+chown -R root:named /etc/named
+
 named-checkconf
 
 named-checkzone ${ZONE_SUBDOMAIN}.${BASE_DOMAIN} /etc/named/zones/db.${ZONE_SUBDOMAIN}.${BASE_DOMAIN}

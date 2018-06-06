@@ -100,6 +100,9 @@ if [ ! -d /etc/named/zones ]; then
 	mkdir /etc/named/zones
 fi
 
+chown root:named /etc/named.conf
+chown -R root:named /etc/named
+
 named-checkconf
 
 systemctl restart named
