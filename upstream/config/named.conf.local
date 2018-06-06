@@ -1,0 +1,5 @@
+zone "lander2k2.com" {
+	type master;
+	file "/etc/named/zones/db.lander2k2.com";
+	forwarders { 10.0.38.99; };
+};
