@@ -7,6 +7,9 @@ sudo sudo yum install -y bind bind-utils
 
 sudo systemctl disable firewalld
 
+# disable SELinux
+sudo mv /tmp/selinux_config /etc/selinux/config
+
 # reset any existing iptables rules
 sudo iptables -P INPUT ACCEPT
 sudo iptables -P FORWARD ACCEPT

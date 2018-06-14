@@ -15,6 +15,11 @@
     "provisioners": [
         {
             "type": "file",
+            "source": "selinux_config",
+            "destination": "/tmp/selinux_config"
+        },
+        {
+            "type": "file",
             "source": "config_master.sh",
             "destination": "/tmp/config_master.sh"
         },
