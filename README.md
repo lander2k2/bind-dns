@@ -5,7 +5,7 @@ Use packer and terraform to deploy a pair of Bind DNS servers in an AWS VPC to r
 ## Prerequisites
 * a pair of elastic network interfaces in AWS with static private IPs
 
-## Usage
+## Initial Deployment
 
 1. Clone this repo.
 ```
@@ -69,4 +69,36 @@ Use packer and terraform to deploy a pair of Bind DNS servers in an AWS VPC to r
 ```
 
 10. Update your existing upstream VPC DNS servers to delegate the specified zone to the IPs of your master and slave DNS servers.
+
+## Zone Updates
+
+This update is based on the assumption that your base domain and zone subdomain have *not* changed.  These instructions are to update records within an exisiting zone.
+
+1. Ensure your `dns.env` file is updated and all variables accurate.
+
+2. Generate updated zone file.
+```
+    $ source dns.env
+    $ ./update_zone_conf.sh
+```
+
+3. Copy updated zone file to the master bind server and ssh to it.
+```
+    $ scp -i [private key] [zone file] [user]@[master ip]:~/
+    $ ssh -i [private key] [user]@[master ip]
+```
+
+4. Update conf on server.  If your zone is `k8s.cnqr-cn.com` your zone subdomain is `k8s` and your base domain is `cnqr-cn.com`.
+```
+    $ sudo su
+    # mv ./[zone file] /etc/named/zones/
+    # named-checkzone [zone subdomain].[base domain] /etc/named/zones/db.[zone subdomain].[base domain]  # to validate zone config
+    # sudo systemctl restart named
+```
+
+## New Zone Records
+
+If you deploy an additional Kubernetes cluster in the same VPC or require additional name records for existing clusters (for things other than the API server), add new variables to the `dns.env` file and edit the `update_zone_conf.sh` script to include the new records in the zone config template.  Then run throug the "Zone Updates" steps above.
+
+Note: this only works for adding new records to an existing zone, e.g `k8s.cnqr-cn.com`.  Adding new zones to the existing bind servers requires additional configuration.
 
