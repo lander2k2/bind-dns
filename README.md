@@ -2,6 +2,9 @@
 
 Use packer and terraform to deploy a pair of Bind DNS servers in an AWS VPC to resolve DNS name for K8s API server (or whatever you wish).
 
+## Prerequisites
+* a pair of elastic network interfaces in AWS with static private IPs
+
 ## Usage
 
 1. Clone this repo.
@@ -12,9 +15,9 @@ Use packer and terraform to deploy a pair of Bind DNS servers in an AWS VPC to r
 
 2. Export your AWS keys and preferred region.
 ```
-	$ export AWS_ACCESS_KEY_ID="accesskey"
-	$ export AWS_SECRET_ACCESS_KEY="secretkey"
-	$ export AWS_DEFAULT_REGION="us-east-2"
+    $ export AWS_ACCESS_KEY_ID="accesskey"
+    $ export AWS_SECRET_ACCESS_KEY="secretkey"
+    $ export AWS_DEFAULT_REGION="us-east-2"
 ```
 
 3. Build a CentOS-based image for your DNS servers.  Not the AMI ID for adding to the tfvars.
@@ -65,5 +68,5 @@ Use packer and terraform to deploy a pair of Bind DNS servers in an AWS VPC to r
     # configure_slave.sh
 ```
 
-10. Add the two name server IPs to your jump box resolv.conf
+10. Update your existing upstream VPC DNS servers to delegate the specified zone to the IPs of your master and slave DNS servers.
 
